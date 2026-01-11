@@ -7,13 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Unit {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
 model Product {
   id          String         @id @default(cuid())
   sku         String         @unique
   name        String
-  category    String
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  categoryId  String?
   type        String
-  unit        String
+  unit        Unit?          @relation(fields: [unitId], references: [id])
+  unitId      String?
   costPrice   Int            @default(0)
   price       Int
   stock       Int            @default(0)

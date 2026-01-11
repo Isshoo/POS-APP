@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HiOutlinePlusCircle, HiOutlinePencilSquare } from 'react-icons/hi2';
+import { HiOutlinePlusCircle, HiOutlinePencilSquare, HiOutlineCog6Tooth, HiOutlineTrash } from 'react-icons/hi2';
 import { useStore } from '../store/useStore';
 import { formatCurrency, formatNumberInput, toNumeric } from '../utils/format';
 import { api } from '../lib/api';
@@ -8,9 +8,9 @@ import Modal from './Modal.jsx';
 const emptyForm = {
   sku: '',
   name: '',
-  category: '',
+  categoryId: '',
   type: '',
-  unit: '',
+  unitId: '',
   costPrice: '',
   price: '',
   stock: '',
@@ -18,14 +18,30 @@ const emptyForm = {
 
 const Products = () => {
   const products = useStore((state) => state.products);
+  const units = useStore((state) => state.units);
+  const categories = useStore((state) => state.categories);
   const createProduct = useStore((state) => state.createProduct);
   const updateProduct = useStore((state) => state.updateProduct);
+  const createUnit = useStore((state) => state.createUnit);
+  const deleteUnit = useStore((state) => state.deleteUnit);
+  const createCategory = useStore((state) => state.createCategory);
+  const deleteCategory = useStore((state) => state.deleteCategory);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [feedback, setFeedback] = useState(null);
   const [formFeedback, setFormFeedback] = useState(null);
+
+  // Unit Management Modal State
+  const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
+  const [newUnitName, setNewUnitName] = useState('');
+  const [unitFeedback, setUnitFeedback] = useState(null);
+
+  // Category Management Modal State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryFeedback, setCategoryFeedback] = useState(null);
 
   const openNew = async () => {
     setEditingId(null);
@@ -48,9 +64,9 @@ const Products = () => {
     setForm({
       sku: product.sku || '',
       name: product.name || '',
-      category: product.category || '',
+      categoryId: product.categoryId || '',
       type: product.type || '',
-      unit: product.unit || '',
+      unitId: product.unitId || '',
       costPrice: product.costPrice ? formatNumberInput(String(product.costPrice)) : '',
       price: product.price ? formatNumberInput(String(product.price)) : '',
       stock: String(product.stock || ''),
@@ -63,9 +79,9 @@ const Products = () => {
     const payload = {
       sku: form.sku,
       name: form.name,
-      category: form.category,
+      categoryId: form.categoryId || null,
       type: form.type,
-      unit: form.unit,
+      unitId: form.unitId || null,
       costPrice: toNumeric(form.costPrice),
       price: toNumeric(form.price),
       stock: Number(form.stock) || 0,
@@ -87,11 +103,55 @@ const Products = () => {
     }
   };
 
-
-
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Unit Management Functions
+  const handleAddUnit = async (e) => {
+    e.preventDefault();
+    if (!newUnitName.trim()) return;
+
+    const result = await createUnit(newUnitName.trim());
+    if (result.success) {
+      setNewUnitName('');
+      setUnitFeedback({ type: 'success', text: result.message });
+    } else {
+      setUnitFeedback({ type: 'error', text: result.message });
+    }
+  };
+
+  const handleDeleteUnit = async (id) => {
+    const result = await deleteUnit(id);
+    if (result.success) {
+      setUnitFeedback({ type: 'success', text: result.message });
+    } else {
+      setUnitFeedback({ type: 'error', text: result.message });
+    }
+  };
+
+  // Category Management Functions
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+
+    const result = await createCategory(newCategoryName.trim());
+    if (result.success) {
+      setNewCategoryName('');
+      setCategoryFeedback({ type: 'success', text: result.message });
+    } else {
+      setCategoryFeedback({ type: 'error', text: result.message });
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    const result = await deleteCategory(id);
+    if (result.success) {
+      setCategoryFeedback({ type: 'success', text: result.message });
+    } else {
+      setCategoryFeedback({ type: 'error', text: result.message });
+    }
   };
 
   return (
@@ -102,13 +162,37 @@ const Products = () => {
           <h2 className="mt-1 text-3xl font-semibold text-primaryDark">Produk</h2>
           <p className="text-base text-secondary">Kelola produk dan daftar harga</p>
         </div>
-        <button
-          className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 px-6 py-3 text-base font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition min-h-[48px]"
-          onClick={openNew}
-        >
-          <HiOutlinePlusCircle className="h-5 w-5" />
-          Tambah Produk
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            className="inline-flex items-center gap-2 rounded-full border-2 border-blue-200 px-4 py-3 text-base font-medium text-blue-600 hover:bg-blue-50 transition min-h-[48px]"
+            onClick={() => {
+              setIsCategoryModalOpen(true);
+              setCategoryFeedback(null);
+            }}
+            title="Kelola Kategori"
+          >
+            <HiOutlineCog6Tooth className="h-5 w-5" />
+            Kelola Kategori
+          </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-full border-2 border-blue-200 px-4 py-3 text-base font-medium text-blue-600 hover:bg-blue-50 transition min-h-[48px]"
+            onClick={() => {
+              setIsUnitModalOpen(true);
+              setUnitFeedback(null);
+            }}
+            title="Kelola Satuan"
+          >
+            <HiOutlineCog6Tooth className="h-5 w-5" />
+            Kelola Satuan
+          </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 px-6 py-3 text-base font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition min-h-[48px]"
+            onClick={openNew}
+          >
+            <HiOutlinePlusCircle className="h-5 w-5" />
+            Tambah Produk
+          </button>
+        </div>
       </div>
 
       {feedback && (
@@ -156,12 +240,17 @@ const Products = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-secondary">Kategori</label>
-              <input
-                name="category"
-                value={form.category}
+              <select
+                name="categoryId"
+                value={form.categoryId}
                 onChange={handleChange}
                 className="mt-2 w-full rounded-lg border-2 border-blue-200 bg-white px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
-              />
+              >
+                <option value="">Pilih Kategori</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-secondary">Merek</label>
@@ -175,26 +264,15 @@ const Products = () => {
             <div>
               <label className="block text-sm font-medium text-secondary">Satuan</label>
               <select
-                name="unit"
-                value={form.unit}
+                name="unitId"
+                value={form.unitId}
                 onChange={handleChange}
                 className="mt-2 w-full rounded-lg border-2 border-blue-200 bg-white px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
               >
                 <option value="">Pilih Satuan</option>
-                <option value="Pcs">Pcs</option>
-                <option value="Buah">Buah</option>
-                <option value="Kg">Kg</option>
-                <option value="Gram">Gram</option>
-                <option value="Liter">Liter</option>
-                <option value="Meter">Meter</option>
-                <option value="Box">Box</option>
-                <option value="Pack">Pack</option>
-                <option value="Lusin">Lusin</option>
-                <option value="Unit">Unit</option>
-                <option value="Set">Set</option>
-                <option value="Batang">Batang</option>
-                <option value="Lembar">Lembar</option>
-                <option value="Roll">Roll</option>
+                {units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>{unit.name}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -264,6 +342,166 @@ const Products = () => {
         </Modal>
       )}
 
+      {/* Unit Management Modal */}
+      {isUnitModalOpen && (
+        <Modal
+          title="Kelola Satuan"
+          onClose={() => {
+            setIsUnitModalOpen(false);
+            setNewUnitName('');
+            setUnitFeedback(null);
+          }}
+        >
+          <div className="space-y-4">
+            <form onSubmit={handleAddUnit} className="flex gap-2">
+              <input
+                type="text"
+                value={newUnitName}
+                onChange={(e) => setNewUnitName(e.target.value)}
+                placeholder="Nama satuan baru..."
+                className="flex-1 rounded-lg border-2 border-blue-200 bg-white px-4 py-2.5 text-base focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-600 px-4 py-2.5 text-base font-medium text-white hover:bg-blue-700 transition"
+              >
+                Tambah
+              </button>
+            </form>
+
+            {unitFeedback && (
+              <div
+                className={`rounded-lg border px-3 py-2 text-sm ${
+                  unitFeedback.type === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+              >
+                {unitFeedback.text}
+              </div>
+            )}
+
+            <div className="max-h-64 overflow-y-auto">
+              {units.length === 0 ? (
+                <p className="text-center text-sm text-tertiary py-4">Belum ada satuan</p>
+              ) : (
+                <div className="space-y-2">
+                  {units.map((unit) => (
+                    <div
+                      key={unit.id}
+                      className="flex items-center justify-between rounded-lg border border-blue-100 bg-white px-4 py-2.5"
+                    >
+                      <span className="text-base text-primaryDark">{unit.name}</span>
+                      <button
+                        onClick={() => handleDeleteUnit(unit.id)}
+                        className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition"
+                        title="Hapus satuan"
+                      >
+                        <HiOutlineTrash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUnitModalOpen(false);
+                  setNewUnitName('');
+                  setUnitFeedback(null);
+                }}
+                className="rounded-full border-2 border-blue-200 px-5 py-2 text-sm font-medium text-secondary hover:bg-surface"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Category Management Modal */}
+      {isCategoryModalOpen && (
+        <Modal
+          title="Kelola Kategori"
+          onClose={() => {
+            setIsCategoryModalOpen(false);
+            setNewCategoryName('');
+            setCategoryFeedback(null);
+          }}
+        >
+          <div className="space-y-4">
+            <form onSubmit={handleAddCategory} className="flex gap-2">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Nama kategori baru..."
+                className="flex-1 rounded-lg border-2 border-blue-200 bg-white px-4 py-2.5 text-base focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-600 px-4 py-2.5 text-base font-medium text-white hover:bg-blue-700 transition"
+              >
+                Tambah
+              </button>
+            </form>
+
+            {categoryFeedback && (
+              <div
+                className={`rounded-lg border px-3 py-2 text-sm ${
+                  categoryFeedback.type === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+              >
+                {categoryFeedback.text}
+              </div>
+            )}
+
+            <div className="max-h-64 overflow-y-auto">
+              {categories.length === 0 ? (
+                <p className="text-center text-sm text-tertiary py-4">Belum ada kategori</p>
+              ) : (
+                <div className="space-y-2">
+                  {categories.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="flex items-center justify-between rounded-lg border border-blue-100 bg-white px-4 py-2.5"
+                    >
+                      <span className="text-base text-primaryDark">{cat.name}</span>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition"
+                        title="Hapus kategori"
+                      >
+                        <HiOutlineTrash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCategoryModalOpen(false);
+                  setNewCategoryName('');
+                  setCategoryFeedback(null);
+                }}
+                className="rounded-full border-2 border-blue-200 px-5 py-2 text-sm font-medium text-secondary hover:bg-surface"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Product Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {products.length === 0 ? (
@@ -277,7 +515,7 @@ const Products = () => {
               className="rounded-2xl border border-blue-200 bg-white p-5 shadow-sm hover:shadow-md transition"
             >
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-tertiary">
-                {product.category}
+                {product.category || '-'}
               </p>
               <h3 className="mt-2 text-lg font-semibold text-primaryDark">
                 {product.name}

@@ -12,8 +12,10 @@ const mapProduct = (product = {}) => ({
   sku: product.sku,
   name: product.name,
   type: product.type,
-  unit: product.unit,
-  category: product.category,
+  unit: product.unit?.name || '',
+  unitId: product.unitId,
+  category: product.category?.name || '',
+  categoryId: product.categoryId,
   costPrice: product.costPrice,
   price: product.price,
   stock: product.stock,
@@ -62,6 +64,8 @@ export const useStore = create((set, get) => ({
   lastLoginUser: null,
   users: [],
   archivedTransactions: [],
+  units: [],
+  categories: [],
   cart: [],
   searchTerm: '',
   activeCategory: 'Semua',
@@ -119,7 +123,7 @@ export const useStore = create((set, get) => ({
   },
 
   loadInitialData: async () => {
-    const [productsRes, salesRes, warehouseRes, trxRes, reportsRes, lastLoginRes, usersRes] = await Promise.all([
+    const [productsRes, salesRes, warehouseRes, trxRes, reportsRes, lastLoginRes, usersRes, unitsRes, categoriesRes] = await Promise.all([
       api.get('/products'),
       api.get('/sales'),
       api.get('/warehouses'),
@@ -127,6 +131,8 @@ export const useStore = create((set, get) => ({
       api.get('/reports'),
       api.get('/users/last-login'),
       api.get('/users'),
+      api.get('/units'),
+      api.get('/categories'),
     ]);
 
     const products = (productsRes.data?.data || []).map(mapProduct);
@@ -174,6 +180,8 @@ export const useStore = create((set, get) => ({
       reports,
       lastLoginUser: lastLoginRes.data?.data || null,
       users: usersRes.data?.data || [],
+      units: unitsRes.data?.data || [],
+      categories: categoriesRes.data?.data || [],
     });
   },
 
@@ -231,6 +239,69 @@ export const useStore = create((set, get) => ({
       return { success: true, message: response.data.message };
     } catch (error) {
       return { success: false, message: apiErrorMessage(error, 'Gagal memperbarui SKU.') };
+    }
+  },
+
+  // ======= CRUD UNIT =======
+  fetchUnits: async () => {
+    try {
+      const response = await api.get('/units');
+      const units = response.data?.data || [];
+      set({ units });
+      return { success: true, data: units };
+    } catch (error) {
+      return { success: false, message: apiErrorMessage(error, 'Gagal mengambil daftar satuan.') };
+    }
+  },
+
+  createUnit: async (name) => {
+    try {
+      const response = await api.post('/units', { name });
+      const unit = response.data.data;
+      set((state) => ({
+        units: [...state.units, unit].sort((a, b) => a.name.localeCompare(b.name)),
+      }));
+      return { success: true, message: response.data.message, data: unit };
+    } catch (error) {
+      return { success: false, message: apiErrorMessage(error, 'Gagal menambah satuan.') };
+    }
+  },
+
+  deleteUnit: async (id) => {
+    try {
+      const response = await api.delete(`/units/${id}`);
+      set((state) => ({
+        units: state.units.filter((item) => item.id !== id),
+      }));
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return { success: false, message: apiErrorMessage(error, 'Gagal menghapus satuan.') };
+    }
+  },
+
+  // ======= CRUD CATEGORY =======
+  createCategory: async (name) => {
+    try {
+      const response = await api.post('/categories', { name });
+      const category = response.data.data;
+      set((state) => ({
+        categories: [...state.categories, category].sort((a, b) => a.name.localeCompare(b.name)),
+      }));
+      return { success: true, message: response.data.message, data: category };
+    } catch (error) {
+      return { success: false, message: apiErrorMessage(error, 'Gagal menambah kategori.') };
+    }
+  },
+
+  deleteCategory: async (id) => {
+    try {
+      const response = await api.delete(`/categories/${id}`);
+      set((state) => ({
+        categories: state.categories.filter((item) => item.id !== id),
+      }));
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return { success: false, message: apiErrorMessage(error, 'Gagal menghapus kategori.') };
     }
   },
 

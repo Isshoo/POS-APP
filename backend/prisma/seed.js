@@ -12,6 +12,8 @@ async function main() {
   await prisma.warehouse.deleteMany();
   await prisma.salesPerson.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.unit.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
   // User admin awal
@@ -28,15 +30,43 @@ async function main() {
 
   console.log('User admin dibuat:', admin.email);
 
+  // Seed Units
+  const defaultUnits = [
+    'Pcs', 'Buah', 'Kg', 'Gram', 'Liter', 'Meter', 
+    'Box', 'Pack', 'Lusin', 'Unit', 'Set', 'Batang', 
+    'Lembar', 'Roll', 'Sak', 'Kaleng'
+  ];
+
+  const unitMap = {};
+  for (const name of defaultUnits) {
+    const unit = await prisma.unit.create({ data: { name } });
+    unitMap[name] = unit.id;
+  }
+
+  console.log(`Units dibuat: ${defaultUnits.length}`);
+
+  // Seed Categories
+  const defaultCategories = [
+    'Material', 'Cat & Pelapis', 'Plumbing', 'Elektrikal', 'Finishing'
+  ];
+
+  const categoryMap = {};
+  for (const name of defaultCategories) {
+    const category = await prisma.category.create({ data: { name } });
+    categoryMap[name] = category.id;
+  }
+
+  console.log(`Categories dibuat: ${defaultCategories.length}`);
+
   // Produk awal
   const products = await Promise.all([
     prisma.product.create({
       data: {
         sku: 'P-001',
         name: 'Semen Portland 50kg',
-        category: 'Material',
+        categoryId: categoryMap['Material'],
         type: 'Material Dasar',
-        unit: 'Sak',
+        unitId: unitMap['Sak'],
         price: 75000,
         stock: 120,
       },
@@ -45,9 +75,9 @@ async function main() {
       data: {
         sku: 'P-002',
         name: 'Besi Beton 10mm',
-        category: 'Material',
+        categoryId: categoryMap['Material'],
         type: 'Material Struktur',
-        unit: 'Batang',
+        unitId: unitMap['Batang'],
         price: 54000,
         stock: 300,
       },
@@ -56,9 +86,9 @@ async function main() {
       data: {
         sku: 'P-003',
         name: 'Cat Eksterior 5L',
-        category: 'Cat & Pelapis',
+        categoryId: categoryMap['Cat & Pelapis'],
         type: 'Finishing',
-        unit: 'Kaleng',
+        unitId: unitMap['Kaleng'],
         price: 185000,
         stock: 78,
       },
@@ -66,10 +96,10 @@ async function main() {
     prisma.product.create({
       data: {
         sku: 'P-004',
-        name: 'Pipa PVC 3/4\"',
-        category: 'Plumbing',
+        name: 'Pipa PVC 3/4"',
+        categoryId: categoryMap['Plumbing'],
         type: 'Plumbing',
-        unit: 'Batang',
+        unitId: unitMap['Batang'],
         price: 23000,
         stock: 260,
       },
@@ -78,9 +108,9 @@ async function main() {
       data: {
         sku: 'P-005',
         name: 'Kabel NYA 2.5mm',
-        category: 'Elektrikal',
+        categoryId: categoryMap['Elektrikal'],
         type: 'Elektrikal',
-        unit: 'Roll',
+        unitId: unitMap['Roll'],
         price: 95000,
         stock: 90,
       },
@@ -89,9 +119,9 @@ async function main() {
       data: {
         sku: 'P-006',
         name: 'Keramik Lantai 40x40',
-        category: 'Finishing',
+        categoryId: categoryMap['Finishing'],
         type: 'Finishing',
-        unit: 'Box',
+        unitId: unitMap['Box'],
         price: 145000,
         stock: 65,
       },
@@ -264,5 +294,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-

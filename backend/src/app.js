@@ -10,6 +10,8 @@ import transactionsRouter from './routes/transactions.js';
 import reportsRouter from './routes/reports.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
+import unitsRouter from './routes/units.js';
+import categoriesRouter from './routes/categories.js';
 
 dotenv.config();
 
@@ -30,6 +32,8 @@ app.use('/api/sales', salesRouter);
 app.use('/api/warehouses', warehousesRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/units', unitsRouter);
+app.use('/api/categories', categoriesRouter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

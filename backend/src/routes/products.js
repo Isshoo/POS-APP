@@ -67,7 +67,8 @@ router.post('/regenerate-sku', authenticate, async (_req, res, next) => {
 router.get('/', authenticate, async (_req, res, next) => {
   try {
     const products = await prisma.product.findMany({ 
-      orderBy: { createdAt: 'desc' } 
+      orderBy: { createdAt: 'desc' },
+      include: { unit: true, category: true }
     });
     res.json({
       success: true,
@@ -81,7 +82,7 @@ router.get('/', authenticate, async (_req, res, next) => {
 
 router.post('/', authenticate, async (req, res, next) => {
   try {
-    const { name, sku, price, costPrice, stock, category, type, unit } = req.body;
+    const { name, sku, price, costPrice, stock, categoryId, type, unitId } = req.body;
 
     // Validasi input wajib
     if (!name || !sku) {
@@ -146,13 +147,14 @@ router.post('/', authenticate, async (req, res, next) => {
       data: {
         name: name.trim(),
         sku: sku.trim(),
-        category: category?.trim() || '',
+        categoryId: categoryId || null,
         type: type?.trim() || '',
-        unit: unit?.trim() || '',
+        unitId: unitId || null,
         costPrice: costPrice || 0,
         price: price || 0,
         stock: stock || 0,
       },
+      include: { unit: true, category: true }
     });
 
     res.status(201).json({
@@ -168,7 +170,7 @@ router.post('/', authenticate, async (req, res, next) => {
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, sku, price, costPrice, stock, category, type, unit } = req.body;
+    const { name, sku, price, costPrice, stock, categoryId, type, unitId } = req.body;
 
     // Validasi produk ada
     const existing = await prisma.product.findUnique({
@@ -246,13 +248,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
       data: {
         ...(name && { name: name.trim() }),
         ...(sku && { sku: sku.trim() }),
-        ...(category && { category: category.trim() }),
+        ...(categoryId !== undefined && { categoryId: categoryId || null }),
         ...(type && { type: type.trim() }),
-        ...(unit && { unit: unit.trim() }),
+        ...(unitId !== undefined && { unitId: unitId || null }),
         ...(costPrice !== undefined && { costPrice }),
         ...(price !== undefined && { price }),
         ...(stock !== undefined && { stock })
       },
+      include: { unit: true, category: true }
     });
 
     res.json({
