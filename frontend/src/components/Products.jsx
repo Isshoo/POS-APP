@@ -162,29 +162,7 @@ const Products = () => {
           <h2 className="mt-1 text-3xl font-semibold text-primaryDark">Produk</h2>
           <p className="text-base text-secondary">Kelola produk dan daftar harga</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            className="inline-flex items-center gap-2 rounded-full border-2 border-blue-200 px-4 py-3 text-base font-medium text-blue-600 hover:bg-blue-50 transition min-h-[48px]"
-            onClick={() => {
-              setIsCategoryModalOpen(true);
-              setCategoryFeedback(null);
-            }}
-            title="Kelola Kategori"
-          >
-            <HiOutlineCog6Tooth className="h-5 w-5" />
-            Kelola Kategori
-          </button>
-          <button
-            className="inline-flex items-center gap-2 rounded-full border-2 border-blue-200 px-4 py-3 text-base font-medium text-blue-600 hover:bg-blue-50 transition min-h-[48px]"
-            onClick={() => {
-              setIsUnitModalOpen(true);
-              setUnitFeedback(null);
-            }}
-            title="Kelola Satuan"
-          >
-            <HiOutlineCog6Tooth className="h-5 w-5" />
-            Kelola Satuan
-          </button>
+        <div className="flex flex-col items-end gap-2">
           <button
             className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 px-6 py-3 text-base font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition min-h-[48px]"
             onClick={openNew}
@@ -192,6 +170,30 @@ const Products = () => {
             <HiOutlinePlusCircle className="h-5 w-5" />
             Tambah Produk
           </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
+              onClick={() => {
+                setIsCategoryModalOpen(true);
+                setCategoryFeedback(null);
+              }}
+              title="Kelola Kategori"
+            >
+              <HiOutlineCog6Tooth className="h-4 w-4" />
+              Kelola Kategori
+            </button>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
+              onClick={() => {
+                setIsUnitModalOpen(true);
+                setUnitFeedback(null);
+              }}
+              title="Kelola Satuan"
+            >
+              <HiOutlineCog6Tooth className="h-4 w-4" />
+              Kelola Satuan
+            </button>
+          </div>
         </div>
       </div>
 
