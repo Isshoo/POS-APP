@@ -14,6 +14,7 @@ const mapProduct = (product = {}) => ({
   type: product.type,
   unit: product.unit,
   category: product.category,
+  costPrice: product.costPrice,
   price: product.price,
   stock: product.stock,
 });
@@ -23,8 +24,7 @@ const mapSales = (sales = {}) => ({
   name: sales.name,
   phone: sales.phone,
   company: sales.company,
-  products: sales.products || [],
-  activeClients: sales.clients ?? sales.activeClients ?? 0,
+  products: sales.products || '',
 });
 
 const mapWarehouseEntry = (entry = {}) => ({
@@ -61,9 +61,6 @@ export const useStore = create((set, get) => ({
   reports: [],
   lastLoginUser: null,
   users: [],
-  archivedProducts: [],
-  archivedSales: [],
-  archivedWarehouses: [],
   archivedTransactions: [],
   cart: [],
   searchTerm: '',
@@ -117,7 +114,6 @@ export const useStore = create((set, get) => ({
       warehouseEntries: [],
       transactions: [],
       reports: [],
-      archivedProducts: [],
       cart: [],
     });
   },
@@ -219,38 +215,22 @@ export const useStore = create((set, get) => ({
       set((state) => ({
         products: state.products.filter((item) => item.id !== id),
       }));
-      // Refresh archived products to update counter
-      await get().getArchivedProducts();
       return { success: true, message: response.data.message };
     } catch (error) {
       return { success: false, message: apiErrorMessage(error, 'Gagal menghapus produk.') };
     }
   },
 
-  // Get archived products
-  getArchivedProducts: async () => {
+  regenerateAllSku: async () => {
     try {
-      const response = await api.get('/products/archived/list');
-      const archivedProducts = (response.data?.data || []).map(mapProduct);
-      set({ archivedProducts });
-      return { success: true, data: archivedProducts };
-    } catch (error) {
-      return { success: false, message: apiErrorMessage(error, 'Gagal mengambil produk arsip.') };
-    }
-  },
-
-  // Restore archived product
-  restoreProduct: async (id) => {
-    try {
-      const response = await api.post(`/products/${id}/restore`);
-      const product = mapProduct(response.data.data);
-      set((state) => ({
-        archivedProducts: state.archivedProducts.filter((item) => item.id !== id),
-        products: [product, ...state.products],
-      }));
+      const response = await api.post('/products/regenerate-sku');
+      // Reload products to get updated SKUs
+      const productsRes = await api.get('/products');
+      const products = (productsRes.data?.data || []).map(mapProduct);
+      set({ products });
       return { success: true, message: response.data.message };
     } catch (error) {
-      return { success: false, message: apiErrorMessage(error, 'Gagal mengembalikan produk.') };
+      return { success: false, message: apiErrorMessage(error, 'Gagal memperbarui SKU.') };
     }
   },
 
@@ -452,57 +432,7 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  // ======= ARCHIVED SALES =======
-  getArchivedSales: async () => {
-    try {
-      const response = await api.get('/sales/archived/list');
-      const archivedSales = (response.data?.data || []).map(mapSales);
-      set({ archivedSales });
-      return { success: true, data: archivedSales };
-    } catch (error) {
-      return { success: false, message: apiErrorMessage(error, 'Gagal mengambil sales arsip.') };
-    }
-  },
 
-  restoreSales: async (id) => {
-    try {
-      const response = await api.post(`/sales/${id}/restore`);
-      const sales = mapSales(response.data.data);
-      set((state) => ({
-        archivedSales: state.archivedSales.filter((item) => item.id !== id),
-        salesTeam: [sales, ...state.salesTeam],
-      }));
-      return { success: true, message: response.data.message };
-    } catch (error) {
-      return { success: false, message: apiErrorMessage(error, 'Gagal mengembalikan sales.') };
-    }
-  },
-
-  // ======= ARCHIVED WAREHOUSES =======
-  getArchivedWarehouses: async () => {
-    try {
-      const response = await api.get('/warehouses/archived/list');
-      const archivedWarehouses = (response.data?.data || []).map(mapWarehouseEntry);
-      set({ archivedWarehouses });
-      return { success: true, data: archivedWarehouses };
-    } catch (error) {
-      return { success: false, message: apiErrorMessage(error, 'Gagal mengambil arsip gudang.') };
-    }
-  },
-
-  restoreWarehouse: async (id) => {
-    try {
-      const response = await api.post(`/warehouses/${id}/restore`);
-      const entry = mapWarehouseEntry(response.data.data);
-      set((state) => ({
-        archivedWarehouses: state.archivedWarehouses.filter((item) => item.id !== id),
-        warehouseEntries: [entry, ...state.warehouseEntries],
-      }));
-      return { success: true, message: response.data.message };
-    } catch (error) {
-      return { success: false, message: apiErrorMessage(error, 'Gagal mengembalikan catatan gudang.') };
-    }
-  },
 
   // ======= ARCHIVED TRANSACTIONS =======
   getArchivedTransactions: async () => {

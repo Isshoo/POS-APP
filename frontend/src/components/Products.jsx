@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { HiOutlinePlusCircle, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineArrowPath, HiOutlineCube } from 'react-icons/hi2';
+import { useState } from 'react';
+import { HiOutlinePlusCircle, HiOutlinePencilSquare } from 'react-icons/hi2';
 import { useStore } from '../store/useStore';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatNumberInput, toNumeric } from '../utils/format';
+import { api } from '../lib/api';
 import Modal from './Modal.jsx';
 
 const emptyForm = {
@@ -10,36 +11,36 @@ const emptyForm = {
   category: '',
   type: '',
   unit: '',
+  costPrice: '',
   price: '',
   stock: '',
 };
 
 const Products = () => {
   const products = useStore((state) => state.products);
-  const archivedProducts = useStore((state) => state.archivedProducts);
   const createProduct = useStore((state) => state.createProduct);
   const updateProduct = useStore((state) => state.updateProduct);
-  const deleteProduct = useStore((state) => state.deleteProduct);
-  const getArchivedProducts = useStore((state) => state.getArchivedProducts);
-  const restoreProduct = useStore((state) => state.restoreProduct);
 
-  const [activeTab, setActiveTab] = useState('active');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [feedback, setFeedback] = useState(null);
   const [formFeedback, setFormFeedback] = useState(null);
 
-  useEffect(() => {
-    if (activeTab === 'archived') {
-      getArchivedProducts();
-    }
-  }, [activeTab, getArchivedProducts]);
-
-  const openNew = () => {
+  const openNew = async () => {
     setEditingId(null);
     setForm(emptyForm);
     setIsFormOpen(true);
+    
+    // Fetch next auto-generated SKU
+    try {
+      const response = await api.get('/products/next-sku');
+      if (response.data?.data?.sku) {
+        setForm(prev => ({ ...prev, sku: response.data.data.sku }));
+      }
+    } catch (error) {
+      console.error('Failed to get next SKU:', error);
+    }
   };
 
   const openEdit = (product) => {
@@ -50,7 +51,8 @@ const Products = () => {
       category: product.category || '',
       type: product.type || '',
       unit: product.unit || '',
-      price: String(product.price || ''),
+      costPrice: product.costPrice ? formatNumberInput(String(product.costPrice)) : '',
+      price: product.price ? formatNumberInput(String(product.price)) : '',
       stock: String(product.stock || ''),
     });
     setIsFormOpen(true);
@@ -64,7 +66,8 @@ const Products = () => {
       category: form.category,
       type: form.type,
       unit: form.unit,
-      price: Number(form.price) || 0,
+      costPrice: toNumeric(form.costPrice),
+      price: toNumeric(form.price),
       stock: Number(form.stock) || 0,
     };
 
@@ -84,42 +87,28 @@ const Products = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Hapus produk ini dan pindahkan ke arsip?')) return;
-    const result = await deleteProduct(id);
-    setFeedback({ type: result.success ? 'success' : 'error', text: result.message });
-  };
 
-  const handleRestore = async (id) => {
-    if (!window.confirm('Kembalikan produk ini dari arsip?')) return;
-    const result = await restoreProduct(id);
-    setFeedback({ type: result.success ? 'success' : 'error', text: result.message });
-  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const displayProducts = activeTab === 'active' ? products : archivedProducts;
-
   return (
     <section id="produk" className="section-anchor space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tertiary">Katalog</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tertiary">DAFTAR BARANG</p>
           <h2 className="mt-1 text-3xl font-semibold text-primaryDark">Produk</h2>
-          <p className="text-base text-secondary">Kelola katalog produk dan daftar harga</p>
+          <p className="text-base text-secondary">Kelola produk dan daftar harga</p>
         </div>
-        {activeTab === 'active' && (
-          <button
-            className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 px-6 py-3 text-base font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition min-h-[48px]"
-            onClick={openNew}
-          >
-            <HiOutlinePlusCircle className="h-5 w-5" />
-            Tambah Produk
-          </button>
-        )}
+        <button
+          className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 px-6 py-3 text-base font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition min-h-[48px]"
+          onClick={openNew}
+        >
+          <HiOutlinePlusCircle className="h-5 w-5" />
+          Tambah Produk
+        </button>
       </div>
 
       {feedback && (
@@ -133,30 +122,6 @@ const Products = () => {
           {feedback.text}
         </div>
       )}
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-blue-200">
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-4 py-2.5 text-base font-medium border-b-2 transition ${
-            activeTab === 'active'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-secondary hover:text-primaryDark'
-          }`}
-        >
-          Aktif ({products.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('archived')}
-          className={`px-4 py-2.5 text-base font-medium border-b-2 transition ${
-            activeTab === 'archived'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-secondary hover:text-primaryDark'
-          }`}
-        >
-          Arsip ({archivedProducts.length})
-        </button>
-      </div>
 
       {isFormOpen && (
         <Modal
@@ -199,7 +164,7 @@ const Products = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-secondary">Jenis</label>
+              <label className="block text-sm font-medium text-secondary">Merek</label>
               <input
                 name="type"
                 value={form.type}
@@ -209,20 +174,50 @@ const Products = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-secondary">Satuan</label>
-              <input
+              <select
                 name="unit"
                 value={form.unit}
                 onChange={handleChange}
                 className="mt-2 w-full rounded-lg border-2 border-blue-200 bg-white px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">Pilih Satuan</option>
+                <option value="Pcs">Pcs</option>
+                <option value="Buah">Buah</option>
+                <option value="Kg">Kg</option>
+                <option value="Gram">Gram</option>
+                <option value="Liter">Liter</option>
+                <option value="Meter">Meter</option>
+                <option value="Box">Box</option>
+                <option value="Pack">Pack</option>
+                <option value="Lusin">Lusin</option>
+                <option value="Unit">Unit</option>
+                <option value="Set">Set</option>
+                <option value="Batang">Batang</option>
+                <option value="Lembar">Lembar</option>
+                <option value="Roll">Roll</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary">Harga Beli</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                name="costPrice"
+                value={form.costPrice}
+                onChange={(e) => setForm(prev => ({ ...prev, costPrice: formatNumberInput(e.target.value) }))}
+                required
+                placeholder="Modal/HPP"
+                className="mt-2 w-full rounded-lg border-2 border-blue-200 bg-white px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-secondary">Harga</label>
+              <label className="block text-sm font-medium text-secondary">Harga Jual</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 name="price"
                 value={form.price}
-                onChange={handleChange}
+                onChange={(e) => setForm(prev => ({ ...prev, price: formatNumberInput(e.target.value) }))}
                 required
                 className="mt-2 w-full rounded-lg border-2 border-blue-200 bg-white px-4 py-3 text-base focus:border-blue-500 focus:outline-none"
               />
@@ -271,19 +266,15 @@ const Products = () => {
 
       {/* Product Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {displayProducts.length === 0 ? (
+        {products.length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <p className="text-base text-tertiary">
-              {activeTab === 'active' ? 'Belum ada produk aktif' : 'Belum ada produk di arsip'}
-            </p>
+            <p className="text-base text-tertiary">Belum ada produk</p>
           </div>
         ) : (
-          displayProducts.map((product) => (
+          products.map((product) => (
             <div
               key={product.id}
-              className={`rounded-2xl border border-blue-200 bg-white p-5 shadow-sm hover:shadow-md transition ${
-                activeTab === 'archived' ? 'opacity-60' : ''
-              }`}
+              className="rounded-2xl border border-blue-200 bg-white p-5 shadow-sm hover:shadow-md transition"
             >
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-tertiary">
                 {product.category}
@@ -291,9 +282,14 @@ const Products = () => {
               <h3 className="mt-2 text-lg font-semibold text-primaryDark">
                 {product.name}
               </h3>
-              <p className="text-base text-secondary">
-                {formatCurrency(product.price)}
-              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-sm text-secondary">
+                  Harga Beli: <span className="font-medium text-primaryDark">{formatCurrency(product.costPrice || 0)}</span>
+                </p>
+                <p className="text-base text-primaryDark font-semibold">
+                  Harga Jual: {formatCurrency(product.price)}
+                </p>
+              </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-secondary">Jenis:</span>
@@ -314,31 +310,13 @@ const Products = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {activeTab === 'active' ? (
-                    <>
-                      <button
-                        onClick={() => openEdit(product)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-600 hover:text-white transition"
-                      >
-                        <HiOutlinePencilSquare className="h-4 w-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="inline-flex items-center rounded-full border border-red-300 p-1.5 text-red-600 hover:bg-red-600 hover:text-white transition"
-                      >
-                        <HiOutlineTrash className="h-4 w-4" />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => handleRestore(product.id)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-green-300 px-3 py-1.5 text-sm text-green-600 hover:bg-green-600 hover:text-white transition"
-                    >
-                      <HiOutlineArrowPath className="h-4 w-4" />
-                      Restore
-                    </button>
-                  )}
+                  <button
+                    onClick={() => openEdit(product)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-600 hover:text-white transition"
+                  >
+                    <HiOutlinePencilSquare className="h-4 w-4" />
+                    Edit
+                  </button>
                 </div>
               </div>
             </div>

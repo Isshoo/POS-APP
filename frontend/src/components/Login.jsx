@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { HiOutlineEye, HiOutlineEyeSlash } from 'react-icons/hi2';
 import { useStore } from '../store/useStore';
 
 const Login = () => {
@@ -8,6 +9,7 @@ const Login = () => {
   const [email, setEmail] = useState('admin@toko-bangunan.local');
   const [password, setPassword] = useState('admin123');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [easterEgg, setEasterEgg] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -41,7 +43,7 @@ const Login = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-secondary">Email</label>
+            <label className="block text-sm font-medium text-secondary">Nama Pengguna</label>
             <input
               type="email"
               value={email}
@@ -52,13 +54,26 @@ const Login = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-secondary">Kata Sandi</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              className="mt-2 w-full rounded-lg border-2 border-surfaceAlt bg-white px-4 py-3 text-lg min-h-[52px] focus:border-primary focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                className="mt-2 w-full rounded-lg border-2 border-surfaceAlt bg-white px-4 py-3 pr-12 text-lg min-h-[52px] focus:border-primary focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 mt-1 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? (
+                  <HiOutlineEyeSlash className="h-6 w-6" />
+                ) : (
+                  <HiOutlineEye className="h-6 w-6" />
+                )}
+              </button>
+            </div>
           </div>
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}
           <button

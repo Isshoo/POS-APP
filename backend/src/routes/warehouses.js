@@ -4,11 +4,10 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
-// Get all active warehouse entries
+// Get all warehouse entries
 router.get('/', authenticate, async (_req, res, next) => {
   try {
     const entries = await prisma.warehouse.findMany({
-      where: { deletedAt: null },
       orderBy: { date: 'desc' },
     });
     res.json({
@@ -87,13 +86,6 @@ router.put('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    if (existing.deletedAt) {
-      return res.status(409).json({
-        success: false,
-        message: 'Data gudang sudah diarsipkan.',
-      });
-    }
-
     // Validate type if provided
     if (type && !['masuk', 'keluar'].includes(type)) {
       return res.status(400).json({
@@ -131,7 +123,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
   }
 });
 
-// Soft delete warehouse entry
+// Hard delete warehouse entry
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -147,76 +139,14 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    if (existing.deletedAt) {
-      return res.status(409).json({
-        success: false,
-        message: 'Data gudang sudah diarsipkan sebelumnya.',
-      });
-    }
-
-    await prisma.warehouse.update({
+    // Hard delete: hapus permanen dari database
+    await prisma.warehouse.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
 
     res.json({
       success: true,
-      message: 'Data gudang berhasil dipindahkan ke arsip.',
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get archived warehouse entries
-router.get('/archived/list', authenticate, async (_req, res, next) => {
-  try {
-    const entries = await prisma.warehouse.findMany({
-      where: { deletedAt: { not: null } },
-      orderBy: { deletedAt: 'desc' },
-    });
-    res.json({
-      success: true,
-      message: 'Data gudang arsip berhasil diambil.',
-      data: entries,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Restore archived warehouse entry
-router.post('/:id/restore', authenticate, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const existing = await prisma.warehouse.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      return res.status(404).json({
-        success: false,
-        message: 'Data gudang tidak ditemukan.',
-      });
-    }
-
-    if (!existing.deletedAt) {
-      return res.status(409).json({
-        success: false,
-        message: 'Data gudang tidak dalam status arsip.',
-      });
-    }
-
-    const restored = await prisma.warehouse.update({
-      where: { id },
-      data: { deletedAt: null },
-    });
-
-    res.json({
-      success: true,
-      message: 'Data gudang berhasil dikembalikan dari arsip.',
-      data: restored,
+      message: 'Data gudang berhasil dihapus.',
     });
   } catch (error) {
     next(error);

@@ -7,7 +7,6 @@ const router = Router();
 router.get('/', authenticate, async (_req, res, next) => {
   try {
     const sales = await prisma.salesPerson.findMany({ 
-      where: { deletedAt: null },
       orderBy: { createdAt: 'desc' } 
     });
     res.json({
@@ -22,7 +21,7 @@ router.get('/', authenticate, async (_req, res, next) => {
 
 router.post('/', authenticate, async (req, res, next) => {
   try {
-    const { name, phone, address } = req.body;
+    const { name, phone, company, products } = req.body;
 
     // Validasi input wajib
     if (!name) {
@@ -75,8 +74,9 @@ router.post('/', authenticate, async (req, res, next) => {
     const sales = await prisma.salesPerson.create({ 
       data: {
         name: name.trim(),
-        phone: phone ? phone.trim() : null,
-        address: address ? address.trim() : null,
+        phone: phone ? phone.trim() : '',
+        company: company ? company.trim() : '',
+        products: products ? products.trim() : '',
       }
     });
 
@@ -93,7 +93,7 @@ router.post('/', authenticate, async (req, res, next) => {
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, phone, address } = req.body;
+    const { name, phone, company, products } = req.body;
 
     // Validasi sales ada
     const existing = await prisma.salesPerson.findUnique({
@@ -157,8 +157,9 @@ router.put('/:id', authenticate, async (req, res, next) => {
       where: { id }, 
       data: {
         ...(name && { name: name.trim() }),
-        ...(phone !== undefined && { phone: phone ? phone.trim() : null }),
-        ...(address !== undefined && { address: address ? address.trim() : null }),
+        ...(phone !== undefined && { phone: phone ? phone.trim() : '' }),
+        ...(company !== undefined && { company: company ? company.trim() : '' }),
+        ...(products !== undefined && { products: products ? products.trim() : '' }),
       }
     });
 
@@ -188,78 +189,14 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Cek apakah sudah dihapus
-    if (existing.deletedAt) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Sales sudah dihapus sebelumnya.' 
-      });
-    }
-
-    // Soft delete: set deletedAt ke sekarang
-    await prisma.salesPerson.update({
-      where: { id },
-      data: { deletedAt: new Date() }
-    });
-
-    res.json({
-      success: true,
-      message: 'Data sales berhasil dihapus dan dipindahkan ke arsip.',
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get archived sales
-router.get('/archived/list', authenticate, async (_req, res, next) => {
-  try {
-    const sales = await prisma.salesPerson.findMany({ 
-      where: { deletedAt: { not: null } },
-      orderBy: { deletedAt: 'desc' } 
-    });
-    res.json({
-      success: true,
-      message: 'Daftar sales arsip berhasil diambil.',
-      data: sales,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Restore archived sales
-router.post('/:id/restore', authenticate, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const existing = await prisma.salesPerson.findUnique({
+    // Hard delete: hapus permanen dari database
+    await prisma.salesPerson.delete({
       where: { id }
     });
 
-    if (!existing) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Data sales tidak ditemukan.' 
-      });
-    }
-
-    if (!existing.deletedAt) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Sales tidak dalam status arsip.' 
-      });
-    }
-
-    const restored = await prisma.salesPerson.update({
-      where: { id },
-      data: { deletedAt: null }
-    });
-
     res.json({
       success: true,
-      message: 'Data sales berhasil dikembalikan dari arsip.',
-      data: restored,
+      message: 'Data sales berhasil dihapus.',
     });
   } catch (error) {
     next(error);

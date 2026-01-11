@@ -49,7 +49,7 @@ const Cashier = () => {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tertiary">Operasional</p>
           <h2 className="mt-1 text-3xl font-semibold text-primaryDark">Kasir Toko</h2>
-          <p className="text-base text-secondary">Scan produk, kelola keranjang, dan selesaikan pembayaran dengan cepat.</p>
+          <p className="text-base text-secondary">Tampilkan produk, kelola keranjang, dan selesaikan pembayaran dengan cepat.</p>
         </div>
         <button
           className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 px-6 py-3 text-base font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition min-h-[48px]"
@@ -66,7 +66,7 @@ const Cashier = () => {
           <p className="mt-2 text-3xl font-semibold text-primaryDark">{cart.reduce((sum, item) => sum + item.quantity, 0)}</p>
         </div>
         <div className="rounded-2xl bg-white px-6 py-5 shadow-sm border border-blue-200">
-          <p className="text-sm uppercase tracking-[0.25em] text-secondary">Kategori Aktif</p>
+          <p className="text-sm uppercase tracking-[0.25em] text-secondary">Kategori</p>
           <p className="mt-2 text-3xl font-semibold text-primaryDark">{activeCategory}</p>
         </div>
         <div className="rounded-2xl bg-white px-6 py-5 shadow-sm border border-blue-200">

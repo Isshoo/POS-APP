@@ -14,9 +14,9 @@ model Product {
   category    String
   type        String
   unit        String
+  costPrice   Int            @default(0)
   price       Int
   stock       Int            @default(0)
-  deletedAt   DateTime?
   salesItems  TransactionItem[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -27,8 +27,7 @@ model SalesPerson {
   name        String
   phone       String
   company     String
-  clients     Int      @default(0)
-  deletedAt   DateTime?
+  products    String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -40,7 +39,6 @@ model Warehouse {
   quantity    Int
   date        DateTime  @default(now())
   notes       String?
-  deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

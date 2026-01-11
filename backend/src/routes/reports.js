@@ -15,19 +15,23 @@ router.get('/', authenticate, async (_req, res, next) => {
     const [daily, weekly, monthly, yearly] = await Promise.all([
       prisma.transaction.aggregate({
         _sum: { totalPayment: true, profit: true },
-        where: { createdAt: { gte: computeRange(1) } },
+        _count: { id: true },
+        where: { deletedAt: null, createdAt: { gte: computeRange(0) } },
       }),
       prisma.transaction.aggregate({
         _sum: { totalPayment: true, profit: true },
-        where: { createdAt: { gte: computeRange(7) } },
+        _count: { id: true },
+        where: { deletedAt: null, createdAt: { gte: computeRange(7) } },
       }),
       prisma.transaction.aggregate({
         _sum: { totalPayment: true, profit: true },
-        where: { createdAt: { gte: computeRange(30) } },
+        _count: { id: true },
+        where: { deletedAt: null, createdAt: { gte: computeRange(30) } },
       }),
       prisma.transaction.aggregate({
         _sum: { totalPayment: true, profit: true },
-        where: { createdAt: { gte: computeRange(365) } },
+        _count: { id: true },
+        where: { deletedAt: null, createdAt: { gte: computeRange(365) } },
       }),
     ]);
 

@@ -50,7 +50,7 @@ const Reports = () => {
 
   const reports = useMemo(() => {
     return [
-      { id: 'daily', label: 'Harian', data: calculateReport(1) },
+      { id: 'daily', label: 'Harian', data: calculateReport(0) },
       { id: 'weekly', label: 'Mingguan', data: calculateReport(7) },
       { id: 'monthly', label: 'Bulanan', data: calculateReport(30) },
       { id: 'yearly', label: 'Tahunan', data: calculateReport(365) },
@@ -65,7 +65,7 @@ const Reports = () => {
     <section id="laporan" className="section-anchor space-y-6">
       <div>
         <h2 className="text-3xl font-semibold text-gray-900">Laporan</h2>
-        <p className="text-sm text-gray-500">Ringkasan penjualan dan detail produk terjual</p>
+        <p className="text-sm text-gray-500">Detail produk terjual</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -139,7 +139,7 @@ const Reports = () => {
 
       {/* Summary Info */}
       <div className="glass rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-gray-900">Informasi</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Informasi penjualan</h3>
         <p className="mt-2 text-sm text-gray-600">
           Laporan ini menampilkan ringkasan penjualan dan keuntungan untuk periode yang dipilih. 
           Klik "Lihat Detail Produk" pada setiap kartu untuk melihat breakdown produk yang terjual beserta jumlah dan revenue yang dihasilkan.

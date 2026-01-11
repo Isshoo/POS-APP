@@ -9,7 +9,7 @@ async function main() {
   // Bersihkan data lama (urutan penting karena relasi)
   await prisma.transactionItem.deleteMany();
   await prisma.transaction.deleteMany();
-  await prisma.stockMovement.deleteMany();
+  await prisma.warehouse.deleteMany();
   await prisma.salesPerson.deleteMany();
   await prisma.product.deleteMany();
   await prisma.user.deleteMany();
@@ -107,7 +107,7 @@ async function main() {
         name: 'Dewi Lestari',
         phone: '0812-3456-7788',
         company: 'PT Cipta Bangun',
-        clients: 32,
+        products: 'Semen, Besi Beton, Keramik',
       },
     }),
     prisma.salesPerson.create({
@@ -115,7 +115,7 @@ async function main() {
         name: 'Rizky Saputra',
         phone: '0821-7788-9922',
         company: 'CV Cahaya Abadi',
-        clients: 24,
+        products: 'Cat Eksterior, Pipa PVC',
       },
     }),
     prisma.salesPerson.create({
@@ -123,7 +123,7 @@ async function main() {
         name: 'Mira Anggraini',
         phone: '0813-6600-1144',
         company: 'PT Konstruksi Nusantara',
-        clients: 19,
+        products: 'Kabel, Material Elektrikal',
       },
     }),
   ]);
@@ -138,29 +138,33 @@ async function main() {
     return d;
   };
 
+  // Catatan gudang
   await Promise.all([
-    prisma.stockMovement.create({
+    prisma.warehouse.create({
       data: {
+        productName: products[0].name,
+        type: 'masuk',
         quantity: 80,
-        receivedAt: daysAgo(1),
-        productId: products[0].id,
-        salesPersonId: dewi.id,
+        date: daysAgo(1),
+        notes: 'Stok masuk dari supplier',
       },
     }),
-    prisma.stockMovement.create({
+    prisma.warehouse.create({
       data: {
+        productName: products[1].name,
+        type: 'masuk',
         quantity: 150,
-        receivedAt: daysAgo(2),
-        productId: products[1].id,
-        salesPersonId: rizky.id,
+        date: daysAgo(2),
+        notes: 'Stok masuk dari supplier',
       },
     }),
-    prisma.stockMovement.create({
+    prisma.warehouse.create({
       data: {
+        productName: products[2].name,
+        type: 'keluar',
         quantity: 40,
-        receivedAt: daysAgo(4),
-        productId: products[2].id,
-        salesPersonId: mira.id,
+        date: daysAgo(4),
+        notes: 'Pengiriman ke proyek',
       },
     }),
   ]);

@@ -4,10 +4,69 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
+// Get next auto-generated SKU
+router.get('/next-sku', authenticate, async (_req, res, next) => {
+  try {
+    // Find the highest existing SKU number
+    const products = await prisma.product.findMany({
+      where: {
+        sku: { startsWith: 'PRD' }
+      },
+      select: { sku: true }
+    });
+    
+    let maxNumber = 0;
+    for (const product of products) {
+      const match = product.sku.match(/^PRD(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) maxNumber = num;
+      }
+    }
+    
+    // Also count products that don't have PRD format to include them
+    const totalProducts = await prisma.product.count();
+    const nextNumber = Math.max(maxNumber + 1, totalProducts + 1);
+    const sku = `PRD${String(nextNumber).padStart(4, '0')}`;
+    
+    res.json({
+      success: true,
+      data: { sku },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Regenerate all SKUs with new format
+router.post('/regenerate-sku', authenticate, async (_req, res, next) => {
+  try {
+    // Get all products ordered by creation date
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: 'asc' }
+    });
+    
+    // Update each product with new sequential SKU
+    for (let i = 0; i < products.length; i++) {
+      const newSku = `PRD${String(i + 1).padStart(4, '0')}`;
+      await prisma.product.update({
+        where: { id: products[i].id },
+        data: { sku: newSku }
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `${products.length} produk berhasil diperbarui dengan SKU baru.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/', authenticate, async (_req, res, next) => {
   try {
     const products = await prisma.product.findMany({ 
-      where: { deletedAt: null },
       orderBy: { createdAt: 'desc' } 
     });
     res.json({
@@ -22,7 +81,7 @@ router.get('/', authenticate, async (_req, res, next) => {
 
 router.post('/', authenticate, async (req, res, next) => {
   try {
-    const { name, sku, price, stock, category, type, unit } = req.body;
+    const { name, sku, price, costPrice, stock, category, type, unit } = req.body;
 
     // Validasi input wajib
     if (!name || !sku) {
@@ -65,7 +124,14 @@ router.post('/', authenticate, async (req, res, next) => {
     if (price && price < 0) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Harga tidak boleh negatif.' 
+        message: 'Harga jual tidak boleh negatif.' 
+      });
+    }
+
+    if (costPrice && costPrice < 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Harga beli tidak boleh negatif.' 
       });
     }
 
@@ -83,6 +149,7 @@ router.post('/', authenticate, async (req, res, next) => {
         category: category?.trim() || '',
         type: type?.trim() || '',
         unit: unit?.trim() || '',
+        costPrice: costPrice || 0,
         price: price || 0,
         stock: stock || 0,
       },
@@ -101,7 +168,7 @@ router.post('/', authenticate, async (req, res, next) => {
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, sku, price, stock, category, type, unit } = req.body;
+    const { name, sku, price, costPrice, stock, category, type, unit } = req.body;
 
     // Validasi produk ada
     const existing = await prisma.product.findUnique({
@@ -156,7 +223,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
     if (price !== undefined && price < 0) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Harga tidak boleh negatif.' 
+        message: 'Harga jual tidak boleh negatif.' 
+      });
+    }
+
+    if (costPrice !== undefined && costPrice < 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Harga beli tidak boleh negatif.' 
       });
     }
 
@@ -175,6 +249,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
         ...(category && { category: category.trim() }),
         ...(type && { type: type.trim() }),
         ...(unit && { unit: unit.trim() }),
+        ...(costPrice !== undefined && { costPrice }),
         ...(price !== undefined && { price }),
         ...(stock !== undefined && { stock })
       },
@@ -206,83 +281,14 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Cek apakah sudah dihapus
-    if (existing.deletedAt) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Produk sudah dihapus sebelumnya.' 
-      });
-    }
-
-    // Soft delete: set deletedAt ke sekarang
-    await prisma.product.update({
-      where: { id },
-      data: { deletedAt: new Date() }
-    });
-
-    res.json({
-      success: true,
-      message: 'Produk berhasil dihapus dan dipindahkan ke arsip.',
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get archived (deleted) products
-router.get('/archived/list', authenticate, async (_req, res, next) => {
-  try {
-    const products = await prisma.product.findMany({ 
-      where: { 
-        deletedAt: { not: null } 
-      },
-      orderBy: { deletedAt: 'desc' } 
-    });
-    res.json({
-      success: true,
-      message: 'Daftar produk arsip berhasil diambil.',
-      data: products,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Restore deleted product
-router.post('/:id/restore', authenticate, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    // Validasi produk ada
-    const existing = await prisma.product.findUnique({
+    // Hard delete: hapus permanen dari database
+    await prisma.product.delete({
       where: { id }
     });
 
-    if (!existing) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Produk tidak ditemukan.' 
-      });
-    }
-
-    // Cek apakah produk memang sudah dihapus
-    if (!existing.deletedAt) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Produk tidak dalam status arsip.' 
-      });
-    }
-
-    // Restore: set deletedAt ke null
-    const restored = await prisma.product.update({
-      where: { id },
-      data: { deletedAt: null }
-    });
-
     res.json({
       success: true,
-      message: 'Produk berhasil dikembalikan dari arsip.',
-      data: restored,
+      message: 'Produk berhasil dihapus.',
     });
   } catch (error) {
     next(error);

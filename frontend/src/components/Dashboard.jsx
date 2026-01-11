@@ -87,8 +87,8 @@ const Dashboard = () => {
     <section id="dashboard" className="section-anchor space-y-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-tertiary">Beranda</p>
-        <h2 className="mt-1 text-4xl font-semibold text-primaryDark">Dashboard</h2>
-        <p className="text-lg text-secondary">Ringkasan aktivitas dan performa toko hari ini</p>
+        <h2 className="mt-1 text-4xl font-semibold text-primaryDark">Halaman beranda</h2>
+        <p className="text-lg text-secondary">aktivitas dan performa toko hari ini</p>
       </div>
 
       {/* Statistics Cards */}
